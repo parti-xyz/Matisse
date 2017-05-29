@@ -85,4 +85,8 @@ public enum MimeType {
         }
         return false;
     }
+
+    public String getmMimeTypeName() {
+        return mMimeTypeName;
+    }
 }

@@ -18,6 +18,7 @@ package com.zhihu.matisse;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.StyleRes;
@@ -37,7 +38,9 @@ import java.util.Set;
 
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_BEHIND;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_NOSENSOR;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
@@ -49,8 +52,6 @@ import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT;
-import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER;
-import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED;
 
 /**
  * Fluent API for building photo select specification.
@@ -71,6 +72,7 @@ public final class SelectionSpecBuilder {
     private int mGridExpectedSize;
     private float mThumbnailScale;
     private ImageEngine mImageEngine;
+    private boolean mCaptureInList;
 
     @IntDef({
             SCREEN_ORIENTATION_UNSPECIFIED,
@@ -173,6 +175,11 @@ public final class SelectionSpecBuilder {
         return this;
     }
 
+    public SelectionSpecBuilder captureInList(boolean enable) {
+        mCaptureInList = enable;
+        return this;
+    }
+
     /**
      * Capture strategy provided for the location to save photos including internal and external
      * storage and also a authority for {@link android.support.v4.content.FileProvider}.
@@ -256,7 +263,7 @@ public final class SelectionSpecBuilder {
      *
      * @param requestCode Identity of the request Activity or Fragment.
      */
-    public void forResult(int requestCode) {
+    public void forResult(int requestCode, ArrayList<Uri> defaultSelections) {
         Activity activity = mMatisse.getActivity();
         if (activity == null) {
             return;
@@ -287,6 +294,7 @@ public final class SelectionSpecBuilder {
             }
             mSelectionSpec.captureStrategy = mCaptureStrategy;
         }
+        mSelectionSpec.captureInList = mCaptureInList;
 
         if (mGridExpectedSize > 0) {
             mSelectionSpec.gridExpectedSize = mGridExpectedSize;
@@ -305,6 +313,7 @@ public final class SelectionSpecBuilder {
         mSelectionSpec.imageEngine = mImageEngine;
 
         Intent intent = new Intent(activity, MatisseActivity.class);
+        intent.putParcelableArrayListExtra(MatisseActivity.INTENT_EXTRA_DEFAULT_SELECTIONS, defaultSelections);
 
         Fragment fragment = mMatisse.getFragment();
         if (fragment != null) {

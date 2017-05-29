@@ -16,14 +16,20 @@
 package com.zhihu.matisse.internal.utils;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.FileProvider;
+import android.support.v4.os.EnvironmentCompat;
+import android.text.TextUtils;
+import android.util.Log;
 
 import com.zhihu.matisse.internal.entity.CaptureStrategy;
 
@@ -32,13 +38,17 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class MediaStoreCompat {
 
+    private static final String TAG = MediaStoreCompat.class.getSimpleName();
     private final WeakReference<Activity> mContext;
     private final WeakReference<Fragment> mFragment;
     private CaptureStrategy mCaptureStrategy;
     private Uri mCurrentPhotoUri;
+    private String mCurrentPhotoPath;
 
     public MediaStoreCompat(Activity activity) {
         mContext = new WeakReference<>(activity);
@@ -75,23 +85,53 @@ public class MediaStoreCompat {
                 e.printStackTrace();
             }
 
-            if (photoFile != null) {
-                mCurrentPhotoUri = FileProvider.getUriForFile(mContext.get(),
-                        mCaptureStrategy.authority, photoFile);
-                captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCurrentPhotoUri);
-                if (mFragment != null) {
-                    mFragment.get().startActivityForResult(captureIntent, requestCode);
-                } else {
-                    mContext.get().startActivityForResult(captureIntent, requestCode);
+            if (photoFile == null) {
+                Log.d(TAG, "Can't create file!");
+                return;
+            }
+
+            Uri photoUri = FileProvider.getUriForFile(mContext.get(),
+                    mCaptureStrategy.authority, photoFile);
+            if (photoUri == null) {
+                Log.d(TAG, "Check file path of CaptureStrategy");
+                return;
+            }
+            mCurrentPhotoPath = photoFile.getAbsolutePath();
+            captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+
+            if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP) {
+                captureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                if(mContext.get() == null) return;
+                ClipData clip = ClipData.newUri(mContext.get().getContentResolver(), "photo", photoUri);
+                captureIntent.setClipData(clip);
+                captureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            } else {
+                List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(captureIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    context.grantUriPermission(packageName, photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 }
+            }
+
+            if (mFragment != null) {
+                mFragment.get().startActivityForResult(captureIntent, requestCode);
+            } else {
+                mContext.get().startActivityForResult(captureIntent, requestCode);
+            }
+
+            if (photoUri != null) {
+                Log.d(TAG, photoUri.toString());
+                mCurrentPhotoUri = photoUri;
             }
         }
     }
 
     private File createImageFile() throws IOException {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
+        String timeStamp =
+                new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = String.format("JPEG_%s.jpg", timeStamp);
+
         File storageDir;
         if (mCaptureStrategy.isPublic) {
             storageDir = Environment.getExternalStoragePublicDirectory(
@@ -99,11 +139,30 @@ public class MediaStoreCompat {
         } else {
             storageDir = mContext.get().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         }
-        return new File(storageDir + imageFileName + ".jpg");
+        if(!TextUtils.isEmpty(mCaptureStrategy.directoryName)) {
+            storageDir = new File(storageDir, mCaptureStrategy.directoryName);
+        }
+        if (!storageDir.exists()) {
+            storageDir.mkdirs();
+        }
+
+        // Avoid joining path components manually
+        File tempFile = new File(storageDir, imageFileName);
+
+        // Handle the situation that user's external storage is not ready
+        if (!Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(tempFile))) {
+            Log.d(TAG, "External storage is not ready");
+            return null;
+        }
+
+        return tempFile;
     }
 
-    public Uri getCurrentPhotoPath() {
+    public Uri getCurrentPhotoUri() {
         return mCurrentPhotoUri;
     }
 
+    public String getCurrentPhotoPath() {
+        return mCurrentPhotoPath;
+    }
 }

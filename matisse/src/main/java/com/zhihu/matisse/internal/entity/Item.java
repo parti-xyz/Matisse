@@ -46,7 +46,7 @@ public class Item implements Parcelable {
     public final Uri uri;
     public final long size;
 
-    Item(long id, String mimeType, long size) {
+    public Item(long id, String mimeType, long size) {
         this.id = id;
         this.mimeType = mimeType;
         this.uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);

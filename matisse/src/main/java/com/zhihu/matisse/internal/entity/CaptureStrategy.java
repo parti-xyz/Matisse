@@ -19,9 +19,11 @@ public class CaptureStrategy {
 
     public final boolean isPublic;
     public final String authority;
+    public final String directoryName;
 
-    public CaptureStrategy(boolean isPublic, String authority) {
+    public CaptureStrategy(boolean isPublic, String authority, String directoryName) {
         this.isPublic = isPublic;
         this.authority = authority;
+        this.directoryName = directoryName;
     }
 }

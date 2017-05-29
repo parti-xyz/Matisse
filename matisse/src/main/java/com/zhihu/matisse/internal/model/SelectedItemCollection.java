@@ -16,14 +16,18 @@
 package com.zhihu.matisse.internal.model;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Log;
 
 import com.zhihu.matisse.R;
 import com.zhihu.matisse.internal.entity.Item;
 import com.zhihu.matisse.internal.entity.SelectionSpec;
 import com.zhihu.matisse.internal.entity.UncapableCause;
 import com.zhihu.matisse.internal.ui.widget.CheckView;
+import com.zhihu.matisse.internal.utils.PathUtils;
 import com.zhihu.matisse.internal.utils.PhotoMetadataUtils;
 
 import java.util.ArrayList;
@@ -57,6 +61,31 @@ public class SelectedItemCollection {
         mItems.addAll(uris);
     }
 
+    public void setDefaultSelectionFromUris(List<Uri> uris) {
+        if (uris != null) {
+            final String[] PROJECTION = {MediaStore.Images.Media._ID,
+                    MediaStore.Images.Media.MIME_TYPE, MediaStore.Images.Media.SIZE};
+            final ArrayList<Item> selected = new ArrayList<>();
+            for(Uri uri : uris) {
+                PhotoMetadataUtils.ofUri(mContext.getContentResolver(), uri, PROJECTION, new PhotoMetadataUtils.OnCursor() {
+                    @Override
+                    public void run(Cursor cursor) {
+                        if(cursor.getColumnIndex(MediaStore.Images.Media._ID) == -1 || cursor.getColumnIndex(MediaStore.Images.Media.MIME_TYPE) == -1 || cursor.getColumnIndex(MediaStore.Images.Media.SIZE) == -1) {
+                            return;
+                        }
+                        long id = cursor.getLong(cursor.getColumnIndex(MediaStore.Images.Media._ID));
+                        String mineType = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.MIME_TYPE));
+                        long size = cursor.getLong(cursor.getColumnIndex(MediaStore.Images.Media.SIZE));
+
+                        selected.add(new Item(id, mineType, size));
+                    }
+                });
+
+            }
+            setDefaultSelection(selected);
+        }
+    }
+
     public void onSaveInstanceState(Bundle outState) {
         outState.putParcelableArrayList(STATE_SELECTION, new ArrayList<>(mItems));
     }
@@ -84,6 +113,14 @@ public class SelectedItemCollection {
             uris.add(item.getContentUri());
         }
         return uris;
+    }
+
+    public List<String> asListOfPath() {
+        List<String> paths = new ArrayList<>();
+        for (Item item : mItems) {
+            paths.add(PathUtils.getPath(mContext, item.getContentUri()));
+        }
+        return paths;
     }
 
     public boolean isEmpty() {

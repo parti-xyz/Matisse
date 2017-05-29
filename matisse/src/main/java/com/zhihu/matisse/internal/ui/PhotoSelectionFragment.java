@@ -110,7 +110,7 @@ public class PhotoSelectionFragment extends Fragment implements
         mRecyclerView.addItemDecoration(new PhotoGridInset(spanCount, spacing, false));
         mRecyclerView.setAdapter(mAdapter);
         mPhotoCollection.onCreate(getActivity(), this);
-        mPhotoCollection.load(album, selectionSpec.capture);
+        mPhotoCollection.load(album, selectionSpec.capture && selectionSpec.captureInList);
     }
 
     @Override

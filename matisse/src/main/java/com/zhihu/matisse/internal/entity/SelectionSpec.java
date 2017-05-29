@@ -41,6 +41,7 @@ public final class SelectionSpec {
     public int gridExpectedSize;
     public float thumbnailScale;
     public ImageEngine imageEngine;
+    public boolean captureInList;
 
     private SelectionSpec() {
     }
@@ -63,6 +64,7 @@ public final class SelectionSpec {
         maxSelectable = 0;
         filters = null;
         capture = false;
+        captureInList = false;
         captureStrategy = null;
         spanCount = 0;
         gridExpectedSize = 0;

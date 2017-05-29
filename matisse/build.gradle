@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 apply plugin: 'com.android.library'
-apply plugin: 'com.novoda.bintray-release'
+//apply plugin: 'com.novoda.bintray-release'
 
 android {
     compileSdkVersion 25
@@ -50,11 +50,11 @@ dependencies {
 
 // jcenter configuration for novoda's bintray-release
 // $ ./gradlew clean build bintrayUpload -PbintrayUser=BINTRAY_USERNAME -PbintrayKey=BINTRAY_KEY -PdryRun=false
-publish {
-    userOrg = 'zhihu'
-    groupId = 'com.zhihu.android'
-    artifactId = 'matisse'
-    publishVersion = '0.4.3'
-    desc = 'A well-designed local image selector for Android'
-    website = 'https://www.zhihu.com/'
-}
+//publish {
+//    userOrg = 'zhihu'
+//    groupId = 'com.zhihu.android'
+//    artifactId = 'matisse'
+//    publishVersion = '0.4.3'
+//    desc = 'A well-designed local image selector for Android'
+//    website = 'https://www.zhihu.com/'
+//}

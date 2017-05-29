@@ -42,6 +42,7 @@ import java.text.DecimalFormat;
 
 public final class PhotoMetadataUtils {
     public static final String TAG = PhotoMetadataUtils.class.getSimpleName();
+    public static final long NOT_FOUND_INDEX = -1;
     private static final int MAX_WIDTH = 1600;
     private static final String SCHEME_CONTENT = "content";
 
@@ -121,6 +122,26 @@ public final class PhotoMetadataUtils {
         return uri.getPath();
     }
 
+    public static void ofUri(ContentResolver resolver, Uri uri, String[] projections, OnCursor onCursor) {
+        if (uri == null) {
+            return;
+        }
+
+        Cursor cursor = null;
+        try {
+            cursor = resolver.query(uri, projections,
+                    null, null, null);
+            if (cursor == null || !cursor.moveToFirst()) {
+                return;
+            }
+            onCursor.run(cursor);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
     public static UncapableCause isAcceptable(Context context, Item item) {
         if (!isSelectableType(context, item)) {
             return new UncapableCause(context.getString(R.string.error_file_type));
@@ -166,5 +187,9 @@ public final class PhotoMetadataUtils {
 
     public static float getSizeInMB(long sizeInBytes) {
         return Float.valueOf(new DecimalFormat("0.0").format((float) sizeInBytes / 1024 / 1024));
+    }
+
+    public interface OnCursor {
+        void run(Cursor cursor);
     }
 }
